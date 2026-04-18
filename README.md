@@ -23,7 +23,7 @@ The mod is focused on route planning support:
   - branch count and elite child bonus
   - act-based weighting for `Elite` and `Unknown`
   - rest/elite proximity synergy
-  - current gold and shop distance
+  - act-based shop weighting and shop distance
   - current HP and rest/elite risk
 - A `Random` button can display a random route from start to boss
 - Score weights can be adjusted live from the `Options` popup
@@ -80,7 +80,7 @@ Path the spire2는 현재 맵을 분석해서 추천 경로를 맵 UI 위에 직
   - 갈림길 개수와 엘리트 자식 보너스
   - `엘리트`, `미지`에 대한 Act 기반 가중치
   - 휴식/엘리트 간 거리 시너지
-  - 현재 골드와 상점 거리
+  - Act 기반 상점 가중치와 상점 거리
   - 현재 체력과 휴식/엘리트 위험도
 
 - `Random` 버튼으로 시작 지점부터 보스까지 랜덤 경로를 표시할 수 있습니다.
@@ -112,4 +112,3 @@ Path the spire2는 현재 맵을 분석해서 추천 경로를 맵 UI 위에 직
 - 테스트 노드 표시: 노드 타입별 별도 원형 링 마커
 
 이 시각 요소들은 모드 전용 오버레이이며, 게임 기본 마커가 아니라 로컬 표시용입니다.
-

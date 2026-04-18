@@ -12,6 +12,7 @@ public static class PathTheSpire2Entry
 
     public static void ModInit()
     {
+        MapPathScoreSettings.Load();
         _harmony ??= new Harmony("paththespire2.mod");
         _harmony.PatchAll();
         Log.Warn("[PathTheSpire2] ModInit");

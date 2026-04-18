@@ -106,17 +106,51 @@ public partial class MapPathPreferencePanel : PanelContainer
             return;
         }
 
-        var currentParent = block.GetParent();
-        if (currentParent != null)
+        PlaceBlock(block, area.Content, area.Content.GetChildCount(), bucket);
+    }
+
+    internal void MoveBlockNextToBlock(PathPreferenceNodeKind movedKind, PathPreferenceNodeKind targetKind, bool insertAfter)
+    {
+        if (movedKind == targetKind)
         {
-            currentParent.RemoveChild(block);
+            return;
         }
 
-        area.Content.AddChild(block);
-        _preferences[kind] = bucket;
-        UpdateAreaCaptions();
-        LogLayoutSnapshot(kind, bucket);
-        CallDeferred(MethodName.RequestPreferredPathRefreshDeferred);
+        if (_blocks.TryGetValue(movedKind, out var movedBlock) == false)
+        {
+            return;
+        }
+
+        if (_blocks.TryGetValue(targetKind, out var targetBlock) == false)
+        {
+            return;
+        }
+
+        if (_preferences.TryGetValue(targetKind, out var targetBucket) == false)
+        {
+            return;
+        }
+
+        if (_areas.TryGetValue(targetBucket, out var area) == false)
+        {
+            return;
+        }
+
+        var targetContent = area.Content;
+        var targetIndex = targetBlock.GetIndex();
+        var currentParent = movedBlock.GetParent();
+        var currentIndex = currentParent == targetContent ? movedBlock.GetIndex() : -1;
+        if (currentIndex >= 0 && currentIndex < targetIndex)
+        {
+            targetIndex--;
+        }
+
+        if (insertAfter == true)
+        {
+            targetIndex++;
+        }
+
+        PlaceBlock(movedBlock, targetContent, targetIndex, targetBucket);
     }
 
     internal bool TryGetDraggedKind(Variant data, out PathPreferenceNodeKind kind)
@@ -214,7 +248,7 @@ public partial class MapPathPreferencePanel : PanelContainer
             PathPreferenceNodeKind.Elite
         })
         {
-            var block = new MapPathPreferenceBlock(kind);
+            var block = new MapPathPreferenceBlock(this, kind);
             _blocks[kind] = block;
             _preferences[kind] = PathPreferenceBucket.Neutral;
             _areas[PathPreferenceBucket.Neutral].Content.AddChild(block);
@@ -342,6 +376,25 @@ public partial class MapPathPreferencePanel : PanelContainer
         return $"[{string.Join(", ", items)}]";
     }
 
+    private void PlaceBlock(MapPathPreferenceBlock block, HBoxContainer targetContent, int targetIndex, PathPreferenceBucket targetBucket)
+    {
+        var currentParent = block.GetParent();
+        if (currentParent != null)
+        {
+            currentParent.RemoveChild(block);
+        }
+
+        targetContent.AddChild(block);
+
+        var clampedIndex = Math.Clamp(targetIndex, 0, targetContent.GetChildCount() - 1);
+        targetContent.MoveChild(block, clampedIndex);
+
+        _preferences[block.Kind] = targetBucket;
+        UpdateAreaCaptions();
+        LogLayoutSnapshot(block.Kind, targetBucket);
+        CallDeferred(MethodName.RequestPreferredPathRefreshDeferred);
+    }
+
     private void RefreshLegendPlacement()
     {
         if (_legendRoot == null)
@@ -429,6 +482,7 @@ public partial class MapPathPreferencePanel : PanelContainer
             HealthWeight: GetOptionValue("health_weight", MapPathScoreSettings.Defaults.HealthWeight));
 
         MapPathScoreSettings.Update(tuning);
+        MapPathScoreSettings.Save();
         Log.Warn($"[PathTheSpire2] Score options changed >> {MapPathScoreSettings.Describe(tuning)}");
         CallDeferred(MethodName.RequestPreferredPathRefreshDeferred);
     }
@@ -448,7 +502,7 @@ public partial class MapPathPreferencePanel : PanelContainer
             "elite_child_bonus" => "Extra bonus when a child path includes an Elite.",
             "act_weight" => "Strength of Act-based Elite and Unknown scoring.",
             "rest_elite_weight" => "Strength of Rest and Elite synergy scoring.",
-            "shop_weight" => "Strength of gold and distance based Shop scoring.",
+            "shop_weight" => "Strength of Act and distance based Shop scoring.",
             "health_weight" => "Strength of HP-based Rest and Elite scoring.",
             _ => string.Empty
         };
@@ -720,13 +774,15 @@ public partial class MapPathPreferenceArea : PanelContainer
 
 public partial class MapPathPreferenceBlock : PanelContainer
 {
+    private readonly MapPathPreferencePanel _panel;
     private readonly TextureRect _iconRect = new();
     private readonly Label _fallbackLabel = new();
 
     public PathPreferenceNodeKind Kind { get; }
 
-    public MapPathPreferenceBlock(PathPreferenceNodeKind kind)
+    public MapPathPreferenceBlock(MapPathPreferencePanel panel, PathPreferenceNodeKind kind)
     {
+        _panel = panel;
         Kind = kind;
         MouseFilter = MouseFilterEnum.Stop;
         CustomMinimumSize = new Vector2(MapPathPreferencePanel.BlockSize, MapPathPreferencePanel.BlockSize);
@@ -795,6 +851,22 @@ public partial class MapPathPreferenceBlock : PanelContainer
         };
 
         return Variant.From(data);
+    }
+
+    public override bool _CanDropData(Vector2 atPosition, Variant data)
+    {
+        return _panel.TryGetDraggedKind(data, out var draggedKind) && draggedKind != Kind;
+    }
+
+    public override void _DropData(Vector2 atPosition, Variant data)
+    {
+        if (_panel.TryGetDraggedKind(data, out var draggedKind) == false || draggedKind == Kind)
+        {
+            return;
+        }
+
+        var insertAfter = atPosition.X >= Size.X * 0.5f;
+        _panel.MoveBlockNextToBlock(draggedKind, Kind, insertAfter);
     }
 
     public void SetIconTexture(Texture2D? texture)

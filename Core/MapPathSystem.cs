@@ -362,7 +362,7 @@ public partial class MapPathSystem : Node
         var branch = GetBranchScore(point, context.Tuning);
         var act = GetActScore(point.PointType, context.ActIndex, context.Tuning);
         var restElite = GetRestEliteScore(path, index, point, context.HpRatio, context.Tuning);
-        var shop = GetShopScore(path, index, point, context.Gold, context.Tuning);
+        var shop = GetShopScore(path, index, point, context.ActIndex, context.Tuning);
         var hp = GetHealthScore(path, index, point, context.HpRatio, context.Tuning);
         var total = preference + branch + act + restElite + shop + hp;
         return new NodeScore(point, preference, branch, act, restElite, shop, hp, total);
@@ -471,7 +471,7 @@ public partial class MapPathSystem : Node
         IReadOnlyList<MapPoint> path,
         int index,
         MapPoint point,
-        int gold,
+        int actIndex,
         MapPathScoreTuning tuning)
     {
         if (point.PointType != MapPointType.Shop)
@@ -481,18 +481,14 @@ public partial class MapPathSystem : Node
 
         var nearWeight = Math.Max(0, 7 - index);
         var farWeight = Math.Min(index, 7);
-        if (gold >= 220)
+        var actMultiplier = actIndex switch
         {
-            return nearWeight * 2.0 * tuning.ShopWeight;
-        }
-
-        if (gold <= 120)
-        {
-            return ((farWeight * 1.8) - (nearWeight * 0.6)) * tuning.ShopWeight;
-        }
-
-        var goldRatio = (gold - 120.0) / 100.0;
-        return ((nearWeight * goldRatio * 1.5) + (farWeight * (1.0 - goldRatio) * 1.0)) * tuning.ShopWeight;
+            0 => 0.7,
+            1 => 1.25,
+            _ => 1.55
+        };
+        var distanceScore = (nearWeight * 1.1) + (farWeight * 0.45);
+        return distanceScore * actMultiplier * tuning.ShopWeight;
     }
 
     private static double GetHealthScore(
