@@ -1,0 +1,10 @@
+{
+  "id": "PathTheSpire2",
+  "name": "Path the spire2",
+  "author": "CubeCat",
+  "description": "Draws route guidance on the Slay the Spire 2 map",
+  "version": "0.1.0",
+  "has_pck": false,
+  "has_dll": true,
+  "affects_gameplay": false
+}

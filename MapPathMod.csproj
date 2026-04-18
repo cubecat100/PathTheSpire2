@@ -1,0 +1,39 @@
+<Project Sdk="Godot.NET.Sdk/4.5.1">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <TargetFramework Condition=" '$(GodotTargetPlatform)' == 'android' ">net9.0</TargetFramework>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <RootNamespace>PathTheSpire2</RootNamespace>
+    <AssemblyName>PathTheSpire2</AssemblyName>
+    <Sts2AssemblyPath>D:\SteamLibrary\steamapps\common\Slay the Spire 2\data_sts2_windows_x86_64\sts2.dll</Sts2AssemblyPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Lib.Harmony" Version="2.3.3" />
+    <Reference Include="sts2">
+      <HintPath>$(Sts2AssemblyPath)</HintPath>
+      <Private>True</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="CopyEditorDependencies" AfterTargets="Build" Condition="Exists('$(Sts2AssemblyPath)')">
+    <Copy SourceFiles="$(Sts2AssemblyPath)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="false" />
+  </Target>
+
+  <Target Name="CopyToModsFolder" AfterTargets="Build" Condition="'$(SkipModDeployment)' != 'true'">
+    <PropertyGroup>
+      <ModsFolder>D:\SteamLibrary\steamapps\common\Slay the Spire 2\mods\PathTheSpire2</ModsFolder>
+      <SourceDll>$(OutputPath)PathTheSpire2.dll</SourceDll>
+      <SourceManifest>$(MSBuildProjectDirectory)\mod_manifest.json</SourceManifest>
+    </PropertyGroup>
+
+    <Message Text="Copying DLL to STS2 mods folder..." Importance="high" />
+
+    <MakeDir Directories="$(ModsFolder)" />
+    <Copy SourceFiles="$(SourceDll)" DestinationFolder="$(ModsFolder)" SkipUnchangedFiles="false" />
+    <Copy SourceFiles="$(SourceManifest)" DestinationFolder="$(ModsFolder)" SkipUnchangedFiles="false" />
+
+    <Message Text="Successfully copied $(SourceDll) to $(ModsFolder)" Importance="high" />
+  </Target>
+</Project>
