@@ -4,10 +4,14 @@ using MegaCrit.Sts2.Core.Map;
 
 namespace PathTheSpire2;
 
+/// <summary>
+/// 맵 노드에 타입 링과 경로 링을 그린다.
+/// </summary>
 public partial class MapPathTestMarker : Control
 {
     public const string NodeName = "MapPathTestMarker";
 
+    // 타입 링과 경로 링에 사용하는 색상이다.
     private static readonly Color ShadowColor = new(0.06f, 0.08f, 0.1f, 0.58f);
     private static readonly Color HighlightColor = new(1.0f, 1.0f, 1.0f, 0.14f);
     private static readonly Color PathColorRank1 = new(0.49f, 0.97f, 1.0f, 0.74f);
@@ -30,11 +34,16 @@ public partial class MapPathTestMarker : Control
         OffsetTop = -RingPadding;
         OffsetRight = RingPadding;
         OffsetBottom = RingPadding;
+
+        // 마커는 부모 뒤쪽에 그린다.
         ShowBehindParent = true;
         ZIndex = 0;
         Visible = false;
     }
 
+    /// <summary>
+    /// 타입 링 표시 상태를 갱신한다.
+    /// </summary>
     public void SetTypeMarker(MapPointType markerType)
     {
         TypeMarkerType = markerType;
@@ -42,6 +51,9 @@ public partial class MapPathTestMarker : Control
         QueueRedraw();
     }
 
+    /// <summary>
+    /// 경로 하이라이트 순위를 갱신한다.
+    /// </summary>
     public void SetPathHighlightRank(int rank)
     {
         PathHighlightRank = rank;
@@ -62,6 +74,7 @@ public partial class MapPathTestMarker : Control
 
         if (PathHighlightRank > 0)
         {
+            // 경로 순위에 따라 외곽 링 색상과 두께를 적용한다.
             var pathShadowColor = GetPathShadowColor(PathHighlightRank);
             var pathColor = GetPathColor(PathHighlightRank);
             var widthOffset = PathHighlightRank == 1 ? 1.0f : 0.0f;
@@ -71,6 +84,7 @@ public partial class MapPathTestMarker : Control
 
         if (TypeMarkerType != MapPointType.Unassigned)
         {
+            // 타입 표시는 링으로 그린다.
             var color = GetMarkerColor(TypeMarkerType);
             DrawArc(center, radius + 1.5f, 0.0f, Mathf.Tau, 48, ShadowColor, OuterWidth + 1.0f, true);
             DrawArc(center, radius, 0.0f, Mathf.Tau, 48, color, OuterWidth, true);
@@ -114,6 +128,7 @@ public partial class MapPathTestMarker : Control
 
     private void UpdateVisibility()
     {
+        // 타입 마커나 경로 하이라이트가 있을 때만 표시한다.
         Visible = PathHighlightRank > 0 || TypeMarkerType != MapPointType.Unassigned;
     }
 }

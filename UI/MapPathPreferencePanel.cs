@@ -25,9 +25,14 @@ public enum PathPreferenceNodeKind
     Elite
 }
 
+/// <summary>
+/// 선호도 블록 UI와 옵션 팝업을 관리한다.
+/// </summary>
 public partial class MapPathPreferencePanel : PanelContainer
 {
     public const string NodeName = "MapPathPreferencePanel";
+
+    // 패널과 블록의 고정 크기 값이다.
     internal const float BlockSize = 60.0f;
     internal const float BlockGap = 4.0f;
     internal const float AreaPadding = 2.0f;
@@ -69,6 +74,9 @@ public partial class MapPathPreferencePanel : PanelContainer
         RefreshLegendPlacement();
     }
 
+    /// <summary>
+    /// 패널을 범례 아래에 연결한다.
+    /// </summary>
     public void AttachToLegend(NMapScreen mapScreen)
     {
         if (GetChildCount() == 0)
@@ -90,10 +98,14 @@ public partial class MapPathPreferencePanel : PanelContainer
             _legendRoot.AddChild(this);
         }
 
+        // 범례 아이콘을 블록에 적용한다.
         RefreshLegendPlacement();
         ApplyLegendIcons();
     }
 
+    /// <summary>
+    /// 블록을 지정한 에어리어로 이동시킨다.
+    /// </summary>
     internal void MoveBlockToBucket(PathPreferenceNodeKind kind, PathPreferenceBucket bucket)
     {
         if (_blocks.TryGetValue(kind, out var block) == false)
@@ -109,6 +121,9 @@ public partial class MapPathPreferencePanel : PanelContainer
         PlaceBlock(block, area.Content, area.Content.GetChildCount(), bucket);
     }
 
+    /// <summary>
+    /// 블록을 다른 블록 앞이나 뒤로 이동시킨다.
+    /// </summary>
     internal void MoveBlockNextToBlock(PathPreferenceNodeKind movedKind, PathPreferenceNodeKind targetKind, bool insertAfter)
     {
         if (movedKind == targetKind)
@@ -140,6 +155,8 @@ public partial class MapPathPreferencePanel : PanelContainer
         var targetIndex = targetBlock.GetIndex();
         var currentParent = movedBlock.GetParent();
         var currentIndex = currentParent == targetContent ? movedBlock.GetIndex() : -1;
+
+        // 같은 컨테이너 안에서 이동하는 경우 목표 인덱스를 보정한다.
         if (currentIndex >= 0 && currentIndex < targetIndex)
         {
             targetIndex--;
@@ -171,11 +188,17 @@ public partial class MapPathPreferencePanel : PanelContainer
         return Enum.TryParse(kindText, out kind);
     }
 
+    /// <summary>
+    /// 현재 선호도 배치를 반환한다.
+    /// </summary>
     internal IReadOnlyDictionary<PathPreferenceNodeKind, PathPreferenceBucket> GetPreferenceSnapshot()
     {
         return new Dictionary<PathPreferenceNodeKind, PathPreferenceBucket>(_preferences);
     }
 
+    /// <summary>
+    /// 패널 기본 UI를 생성한다.
+    /// </summary>
     private void BuildUi()
     {
         SetAnchorsPreset(LayoutPreset.TopLeft);
@@ -240,6 +263,7 @@ public partial class MapPathPreferencePanel : PanelContainer
         AddArea(root, PathPreferenceBucket.Neutral);
         AddArea(root, PathPreferenceBucket.Avoid);
 
+        // 기본 시작 상태는 Neutral 줄이다.
         foreach (var kind in new[]
         {
             PathPreferenceNodeKind.Unknown,
@@ -257,6 +281,9 @@ public partial class MapPathPreferencePanel : PanelContainer
         UpdateAreaCaptions();
     }
 
+    /// <summary>
+    /// 옵션 팝업 UI를 생성한다.
+    /// </summary>
     private PopupPanel BuildOptionsPopup()
     {
         var popup = new PopupPanel();
@@ -332,6 +359,7 @@ public partial class MapPathPreferencePanel : PanelContainer
 
     private void UpdateAreaCaptions()
     {
+        // 각 에어리어의 블록 개수를 캡션에 반영한다.
         foreach (var (bucket, area) in _areas)
         {
             var count = 0;
@@ -392,9 +420,14 @@ public partial class MapPathPreferencePanel : PanelContainer
         _preferences[block.Kind] = targetBucket;
         UpdateAreaCaptions();
         LogLayoutSnapshot(block.Kind, targetBucket);
+
+        // 경로 재계산 요청은 deferred 호출로 전달한다.
         CallDeferred(MethodName.RequestPreferredPathRefreshDeferred);
     }
 
+    /// <summary>
+    /// 범례 기준으로 패널 위치를 갱신한다.
+    /// </summary>
     private void RefreshLegendPlacement()
     {
         if (_legendRoot == null)
@@ -404,6 +437,7 @@ public partial class MapPathPreferencePanel : PanelContainer
 
         SetAnchorsPreset(LayoutPreset.TopLeft);
 
+        // 범례 아이템 컨테이너가 있으면 그 아래에 배치한다.
         if (_legendItems != null)
         {
             Position = _legendItems.Position + new Vector2(0.0f, _legendItems.Size.Y + 6.0f);
@@ -419,26 +453,6 @@ public partial class MapPathPreferencePanel : PanelContainer
                 $"[PathTheSpire2] MapPathPreferencePanel attached to legend: parent={_legendRoot.Name}, legendItems={(_legendItems != null ? _legendItems.Name.ToString() : "<null>")}");
             _didLogLegendAttach = true;
         }
-    }
-
-    private void OnRandomButtonPressed()
-    {
-        var mapScreen = FindMapScreen();
-        if (mapScreen == null)
-        {
-            Log.Warn("[PathTheSpire2] Random button ignored: map screen not found");
-            return;
-        }
-
-        var system = mapScreen.GetNodeOrNull<MapPathSystem>(MapPathSystem.NodeName);
-        if (system == null)
-        {
-            Log.Warn("[PathTheSpire2] Random button ignored: MapPathSystem not found");
-            return;
-        }
-
-        Log.Warn("[PathTheSpire2] Random button pressed");
-        system.SelectRandomPathToBoss();
     }
 
     private void OnOptionsButtonPressed()
@@ -464,6 +478,29 @@ public partial class MapPathPreferencePanel : PanelContainer
         Log.Warn($"[PathTheSpire2] Score options popup shown: pos={popupRect.Position}, size={popupRect.Size}");
     }
 
+    private void OnRandomButtonPressed()
+    {
+        var mapScreen = FindMapScreen();
+        if (mapScreen == null)
+        {
+            Log.Warn("[PathTheSpire2] Random button ignored: map screen not found");
+            return;
+        }
+
+        var system = mapScreen.GetNodeOrNull<MapPathSystem>(MapPathSystem.NodeName);
+        if (system == null)
+        {
+            Log.Warn("[PathTheSpire2] Random button ignored: MapPathSystem not found");
+            return;
+        }
+
+        Log.Warn("[PathTheSpire2] Random button pressed");
+        system.SelectRandomPathToBoss();
+    }
+
+    /// <summary>
+    /// 옵션 입력값을 점수 설정에 반영한다.
+    /// </summary>
     private void OnOptionValueChanged()
     {
         if (_optionInputs.Count == 0)
@@ -471,6 +508,7 @@ public partial class MapPathPreferencePanel : PanelContainer
             return;
         }
 
+        // 옵션 입력값으로 점수 가중치 구조체를 다시 만든다.
         var tuning = new MapPathScoreTuning(
             PreferBonus: GetOptionValue("prefer_bonus", MapPathScoreSettings.Defaults.PreferBonus),
             AvoidPenalty: GetOptionValue("avoid_penalty", MapPathScoreSettings.Defaults.AvoidPenalty),
@@ -550,11 +588,15 @@ public partial class MapPathPreferencePanel : PanelContainer
         return null;
     }
 
+    /// <summary>
+    /// 범례 아이콘을 블록에 적용한다.
+    /// </summary>
     private void ApplyLegendIcons()
     {
         var iconByType = new Dictionary<MapPointType, Texture2D>();
         if (_legendItems != null)
         {
+            // 범례에서 노드 타입별 아이콘 텍스처를 읽는다.
             foreach (Node child in _legendItems.GetChildren())
             {
                 if (child is not NMapLegendItem legendItem)
@@ -662,6 +704,9 @@ public partial class MapPathPreferencePanel : PanelContainer
     }
 }
 
+/// <summary>
+/// 선호도 한 줄의 드롭 영역이다.
+/// </summary>
 public partial class MapPathPreferenceArea : PanelContainer
 {
     private readonly MapPathPreferencePanel _panel;
@@ -690,6 +735,7 @@ public partial class MapPathPreferenceArea : PanelContainer
         _caption.Position = new Vector2(6.0f, -7.0f);
         AddChild(_caption);
 
+        // 블록 배치는 내부 HBox가 담당한다.
         Content.AddThemeConstantOverride("separation", (int)MapPathPreferencePanel.BlockGap);
         Content.Alignment = BoxContainer.AlignmentMode.Begin;
         Content.MouseFilter = MouseFilterEnum.Ignore;
@@ -722,6 +768,7 @@ public partial class MapPathPreferenceArea : PanelContainer
             return;
         }
 
+        // 에어리어에 드롭한 블록을 해당 줄로 이동시킨다.
         _panel.MoveBlockToBucket(kind, _bucket);
     }
 
@@ -772,6 +819,9 @@ public partial class MapPathPreferenceArea : PanelContainer
     }
 }
 
+/// <summary>
+/// 드래그 가능한 선호도 블록이다.
+/// </summary>
 public partial class MapPathPreferenceBlock : PanelContainer
 {
     private readonly MapPathPreferencePanel _panel;
@@ -793,6 +843,7 @@ public partial class MapPathPreferenceBlock : PanelContainer
 
         AddThemeStyleboxOverride("panel", CreateBlockStyle());
 
+        // 아이콘은 블록 내부 여백 안에 채운다.
         _iconRect.SetAnchorsPreset(LayoutPreset.FullRect);
         _iconRect.OffsetLeft = 4.0f;
         _iconRect.OffsetTop = 4.0f;
@@ -815,6 +866,7 @@ public partial class MapPathPreferenceBlock : PanelContainer
 
     public override Variant _GetDragData(Vector2 atPosition)
     {
+        // 드래그 프리뷰를 별도로 만든다.
         var preview = new PanelContainer();
         preview.AddThemeStyleboxOverride("panel", CreateBlockStyle());
         preview.CustomMinimumSize = new Vector2(MapPathPreferencePanel.BlockSize, MapPathPreferencePanel.BlockSize);
@@ -865,10 +917,14 @@ public partial class MapPathPreferenceBlock : PanelContainer
             return;
         }
 
+        // 드롭 위치의 좌우에 따라 삽입 위치를 결정한다.
         var insertAfter = atPosition.X >= Size.X * 0.5f;
         _panel.MoveBlockNextToBlock(draggedKind, Kind, insertAfter);
     }
 
+    /// <summary>
+    /// 블록 아이콘을 갱신한다.
+    /// </summary>
     public void SetIconTexture(Texture2D? texture)
     {
         _iconRect.Texture = texture;

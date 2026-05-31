@@ -7,6 +7,9 @@ using System.Reflection;
 
 namespace PathTheSpire2;
 
+/// <summary>
+/// 경로 점수 가중치 묶음이다.
+/// </summary>
 public readonly record struct MapPathScoreTuning(
     double PreferBonus,
     double AvoidPenalty,
@@ -17,8 +20,12 @@ public readonly record struct MapPathScoreTuning(
     double ShopWeight,
     double HealthWeight);
 
+/// <summary>
+/// 점수 설정의 현재값, 로드, 저장을 관리한다.
+/// </summary>
 public static class MapPathScoreSettings
 {
+    // 설정 파일 이름과 섹션 이름이다.
     private const string SettingsFileName = "path_the_spire2_score_settings.cfg";
     private const string SettingsSection = "score";
 
@@ -37,8 +44,12 @@ public static class MapPathScoreSettings
     public static MapPathScoreTuning Current => _current;
     public static string SettingsPath => ResolveSettingsPath();
 
+    /// <summary>
+    /// 설정 파일을 읽어 현재값을 갱신한다.
+    /// </summary>
     public static void Load()
     {
+        // 설정 파일을 읽고 현재값을 갱신한다.
         var config = new ConfigFile();
         var settingsPath = ResolveSettingsPath();
         var error = config.Load(settingsPath);
@@ -62,13 +73,21 @@ public static class MapPathScoreSettings
         Log.Warn($"[PathTheSpire2] Score settings loaded: path={settingsPath} >> {Describe(_current)}");
     }
 
+    /// <summary>
+    /// 메모리상의 현재 설정값을 갱신한다.
+    /// </summary>
     public static void Update(MapPathScoreTuning tuning)
     {
+        // 현재 메모리상의 점수 설정을 갱신한다.
         _current = tuning;
     }
 
+    /// <summary>
+    /// 현재 설정값을 파일에 저장한다.
+    /// </summary>
     public static void Save()
     {
+        // 현재 점수 설정을 파일에 저장한다.
         var settingsPath = ResolveSettingsPath();
         var config = new ConfigFile();
         config.SetValue(SettingsSection, "prefer_bonus", _current.PreferBonus);
@@ -90,6 +109,9 @@ public static class MapPathScoreSettings
         Log.Warn($"[PathTheSpire2] Score settings saved: path={settingsPath} >> {Describe(_current)}");
     }
 
+    /// <summary>
+    /// 설정값을 로그용 문자열로 변환한다.
+    /// </summary>
     public static string Describe(MapPathScoreTuning tuning)
     {
         return string.Create(
@@ -99,6 +121,7 @@ public static class MapPathScoreSettings
 
     private static string ResolveSettingsPath()
     {
+        // 실행 중인 모드 DLL 폴더를 기준으로 설정 파일 경로를 만든다.
         var assemblyPath = Assembly.GetExecutingAssembly().Location;
         var baseDirectory = Path.GetDirectoryName(assemblyPath);
         if (string.IsNullOrWhiteSpace(baseDirectory))
