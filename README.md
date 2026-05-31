@@ -1,5 +1,10 @@
 # Path the spire2
 
+### [download]
+https://github.com/cubecat100/PathTheSpire2/releases
+
+<br>
+
 ## English
 
 ### Overview
